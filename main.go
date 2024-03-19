@@ -12,12 +12,13 @@ import (
 
 func main() {
 	var baseDirFlag, iconsDirFlag, outDir string
-	var attBool bool
+	var attBool, uidBool bool
 
 	flag.StringVar(&baseDirFlag, "b", "", "Base directory to scan for icons")
 	flag.StringVar(&iconsDirFlag, "i", "", "Specific directory within the base directory containing SVG icons")
 	flag.StringVar(&outDir, "o", "dist", "Output subdirectory to save cleaned icons")
 	flag.BoolVar(&attBool, "a", true, "Enable or disable writing attribution details to a file")
+	flag.BoolVar(&uidBool, "u", true, "Enable or disabled keeping the UID of the filename")
 
 	flag.Parse()
 	args := flag.Args()
@@ -85,7 +86,7 @@ func main() {
 		}
 
 		// Remove prefix and write the cleaned file
-		newFileName := removePrefix(fileName)
+		newFileName := removePrefix(fileName, uidBool)
 		newFilePath := filepath.Join(outFullPath, newFileName)
 		if err := os.WriteFile(newFilePath, []byte(cleanedContent), fs.ModePerm); err != nil {
 			fmt.Printf("Error writing cleaned file %s: %v\n", newFileName, err)
@@ -125,10 +126,14 @@ func cleanSVG(content, fileName string) (string, string) {
 }
 
 // removePrefix removes the prefix from the filename, leaving only the main part.
-func removePrefix(fileName string) string {
+func removePrefix(fileName string, uidBool bool) string {
 	parts := strings.SplitN(fileName, "-", 3) // Assuming the format "noun-<name>-<id>.svg"
 	if len(parts) == 3 {
-		return parts[1] + ".svg" // Return "<name>.svg"
+		if uidBool {
+			return parts[1] + "-" + parts[2] + ".svg" // Returns "<name>-<uid>.svg"
+		} else {
+			return parts[1] + ".svg" // Return "<name>.svg"
+		}
 	}
 	return fileName // Return original if not matching expected format
 }
